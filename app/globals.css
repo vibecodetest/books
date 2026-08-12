@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root { --ink:#27251f; --muted:#77746a; --paper:#f7f5ef; --card:#fff; --sage:#53634f; --sage-dark:#3f4d3c; --line:#e7e3d9; --gold:#d09a44; }
+* { box-sizing:border-box; }
+html { background:var(--paper); }
+body { margin:0; background:var(--paper); color:var(--ink); font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif; }
+button,input,textarea,select { font:inherit; }
+button { cursor:pointer; }
+.center-screen { min-height:100vh; display:grid; place-items:center; }
+.loader { width:34px; height:34px; border:3px solid #d8d5cc; border-top-color:var(--sage); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.login-page { min-height:100vh; display:grid; grid-template-columns:1.05fr .95fr; }
+.login-intro { position:relative; overflow:hidden; padding:9vh 8vw; color:#f6f2e8; background:linear-gradient(145deg,#354234,#53634f); display:flex; flex-direction:column; justify-content:center; }
+.login-intro:before,.login-intro:after { content:""; position:absolute; border:1px solid rgba(255,255,255,.12); border-radius:50%; }
+.login-intro:before { width:430px; height:430px; right:-160px; top:-100px; }
+.login-intro:after { width:300px; height:300px; left:-180px; bottom:-120px; }
+.brand-mark { width:54px; height:64px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.42); border-radius:4px 12px 12px 4px; font-family:Georgia,serif; font-size:28px; margin-bottom:10vh; }
+.eyebrow { margin:0 0 14px; color:#ae8150; font-size:12px; font-weight:800; letter-spacing:.2em; }
+.login-intro .eyebrow { color:#d8c5a3; }
+.login-intro h1 { font-family:Georgia,"Noto Serif KR",serif; font-size:clamp(42px,5.2vw,72px); line-height:1.18; font-weight:500; margin:0 0 28px; letter-spacing:-.04em; }
+.intro-copy { color:#d7dcd3; line-height:1.8; max-width:460px; }
+.quote-card { margin-top:8vh; display:flex; gap:18px; align-items:flex-start; border-left:1px solid rgba(255,255,255,.35); padding-left:22px; color:#e8e4d8; }
+.quote-card span { font:52px Georgia; line-height:.8; color:#b8aa8b; }.quote-card p { margin:0; line-height:1.7; }
+.login-panel { background:#fbfaf7; display:grid; place-items:center; padding:50px 8vw; }
+.login-form { width:min(420px,100%); display:flex; flex-direction:column; gap:22px; }
+.mini-logo { display:none; font-weight:800; align-items:center; gap:9px; }.mini-logo span { background:var(--sage); color:white; padding:8px; border-radius:8px; }
+.login-form h2 { font-family:Georgia,"Noto Serif KR",serif; font-size:32px; margin:0 0 10px; }.muted { color:var(--muted); margin:0; line-height:1.6; }
+label { display:flex; flex-direction:column; gap:9px; font-size:13px; font-weight:750; color:#4a4842; }
+input,textarea,select { width:100%; border:1px solid #ddd9cf; border-radius:9px; background:#fff; color:var(--ink); padding:13px 14px; outline:none; transition:.2s; }
+input:focus,textarea:focus,select:focus { border-color:#71806d; box-shadow:0 0 0 3px rgba(83,99,79,.1); }
+textarea { resize:vertical; line-height:1.65; }
+.primary { border:0; border-radius:9px; padding:14px 20px; background:var(--sage); color:#fff; font-weight:800; box-shadow:0 5px 16px rgba(63,77,60,.18); }.primary:hover { background:var(--sage-dark); }.primary:disabled { opacity:.6; cursor:wait; }
+.primary.compact { width:auto; min-width:150px; }
+.demo-box { background:#f0eee7; border-radius:10px; padding:15px 17px; display:grid; gap:6px; color:#68655d; font-size:12px; }.demo-box strong { color:#4b4943; }.demo-box code { font-family:ui-monospace,monospace; color:#4b5b47; }
+.error { color:#b24b3f; font-size:13px; margin:0; }.success { color:#4e7053; font-size:13px; margin:0; }
+.app-shell { min-height:100vh; }
+header { height:76px; padding:0 max(5vw,24px); background:#fff; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+.logo { display:flex; align-items:center; gap:11px; font-weight:850; font-size:17px; }.logo>span { width:38px; height:42px; display:grid; place-items:center; background:var(--sage); border-radius:4px 9px 9px 4px; color:#fff; font-family:Georgia; }.logo small { display:block; font-size:8px; letter-spacing:.15em; color:#99968f; margin-top:3px; }
+.account { display:flex; align-items:center; gap:10px; font-size:13px; }.avatar { width:36px; height:36px; display:grid; place-items:center; border-radius:50%; background:#e3e8df; color:#40503d; font-weight:800; }.account small { display:block; color:#96938a; margin-top:2px; }.text-button { border:0; border-left:1px solid var(--line); background:none; color:#8a877f; margin-left:10px; padding-left:18px; font-size:12px; }
+.hero-row { padding:54px max(7vw,24px) 42px; background:#f0eee7; border-bottom:1px solid #e0ddd3; display:flex; align-items:flex-end; justify-content:space-between; gap:30px; }
+.hero-row h1 { font-family:Georgia,"Noto Serif KR",serif; font-size:38px; margin:0 0 12px; letter-spacing:-.04em; }.hero-row>div>p:last-child { color:var(--muted); margin:0; }
+.stats { display:flex; background:rgba(255,255,255,.7); border:1px solid #dfdcd2; border-radius:12px; padding:16px 8px; }.stats div { min-width:110px; padding:0 22px; border-right:1px solid var(--line); text-align:center; }.stats div:last-child { border:0; }.stats strong { display:block; font:28px Georgia; color:var(--sage-dark); }.stats span { color:#89867e; font-size:11px; }
+.note-composer,.records { margin:36px auto; width:min(1180px,calc(100% - 48px)); background:#fff; border:1px solid var(--line); border-radius:14px; padding:28px 30px; box-shadow:0 8px 32px rgba(60,55,45,.035); }
+.section-heading { display:flex; gap:13px; align-items:center; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:23px; }.section-icon { width:38px; height:38px; display:grid; place-items:center; border-radius:10px; background:#e8ece5; color:var(--sage); font-size:22px; }.section-heading h2,.records h2 { font-size:19px; margin:0 0 5px; }.section-heading p,.records-head p { color:#918e85; font-size:12px; margin:0; }
+.form-grid { display:grid; grid-template-columns:1.4fr 1fr .8fr 1fr; gap:16px; margin-bottom:18px; }.form-footer { display:flex; justify-content:space-between; align-items:center; margin-top:18px; }
+.records { background:transparent; border:0; box-shadow:none; padding:0; }
+.records-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }.search { position:relative; width:270px; }.search span { position:absolute; top:10px; left:13px; font-size:20px; color:#999; }.search input { padding-left:39px; background:#fff; }
+.note-list { display:grid; gap:13px; }.note-card { background:#fff; border:1px solid var(--line); border-radius:12px; display:flex; overflow:hidden; transition:.2s; }.note-card:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(50,45,35,.07); }.book-spine { width:72px; flex:none; background:linear-gradient(150deg,#657460,#465442); display:grid; place-items:center; }.book-spine span { width:38px; height:48px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.45); border-radius:3px 8px 8px 3px; color:white; font:20px Georgia; }
+.note-body { padding:20px 24px; flex:1; min-width:0; }.author-chip { display:inline-flex; align-items:center; gap:6px; background:#eef1eb; border-radius:20px; padding:4px 10px 4px 5px; color:#53634f; font-size:11px; font-weight:750; margin-bottom:12px; }.author-chip>span { width:20px; height:20px; display:grid; place-items:center; border-radius:50%; background:#667562; color:white; }.author-chip small { color:#92988f; }
+.note-title { display:flex; justify-content:space-between; gap:20px; }.note-title h3 { font-family:Georgia,"Noto Serif KR",serif; font-size:20px; margin:0 0 4px; }.note-title p { color:#8c8980; font-size:12px; margin:0; }.stars { color:var(--gold); letter-spacing:2px; white-space:nowrap; }.stars i { color:#ddd9ce; font-style:normal; }
+.memo { color:#55534d; line-height:1.75; margin:15px 0; white-space:pre-wrap; }.note-meta { display:flex; justify-content:space-between; padding-top:13px; border-top:1px dashed #ebe8df; color:#9c988e; font-size:11px; }.note-meta button { border:0; background:none; color:#a57b72; font-size:11px; }
+.empty { min-height:260px; display:grid; place-items:center; align-content:center; text-align:center; background:#fff; border:1px dashed #d8d4ca; border-radius:12px; color:#918e85; }.empty div { font-size:38px; color:#aeb5a9; }.empty h3 { color:#56534c; margin:14px 0 5px; }.empty p { margin:0; font-size:13px; }
+footer { text-align:center; padding:32px; color:#aaa69c; font-size:11px; }
+@media (max-width:900px) { .form-grid { grid-template-columns:1fr 1fr; }.hero-row { align-items:flex-start; flex-direction:column; }.login-page { grid-template-columns:1fr; }.login-intro { display:none; }.mini-logo { display:flex; }.login-panel { min-height:100vh; } }
+@media (max-width:620px) { header { padding:0 16px; }.account>div:not(.avatar) { display:none; }.hero-row { padding:35px 20px; }.hero-row h1 { font-size:31px; }.stats { width:100%; }.stats div { flex:1; min-width:0; padding:0 10px; }.note-composer,.records { width:calc(100% - 28px); padding:20px; }.records { padding:0; }.form-grid { grid-template-columns:1fr; }.records-head { align-items:stretch; flex-direction:column; gap:14px; }.search { width:100%; }.note-card { align-items:stretch; }.book-spine { width:18px; }.book-spine span { display:none; }.note-body { padding:18px; }.note-title { flex-direction:column; gap:10px; }.form-footer { align-items:stretch; flex-direction:column; gap:14px; }.primary.compact { width:100%; } }
