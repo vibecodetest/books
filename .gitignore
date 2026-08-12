@@ -34,6 +34,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+/.output/
 
 /dist/
 /.wrangler/
@@ -42,3 +43,5 @@ yarn-error.log*
 /.local-data.json
 /.server-out.log
 /.server-error.log
+/.vercel-preview-out.log
+/.vercel-preview-error.log

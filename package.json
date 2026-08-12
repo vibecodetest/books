@@ -2,12 +2,13 @@
   "name": "site-creator-vinext-starter",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.16.0",
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "vinext dev",
-    "build": "vinext build",
+    "build": "vite build",
     "start": "vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
+    "nitro": "3.0.260610-beta",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },

@@ -1,5 +1,3 @@
-@import "tailwindcss";
-
 :root { --ink:#27251f; --muted:#77746a; --paper:#f7f5ef; --card:#fff; --sage:#53634f; --sage-dark:#3f4d3c; --line:#e7e3d9; --gold:#d09a44; }
 * { box-sizing:border-box; }
 html { background:var(--paper); }
