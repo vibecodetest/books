@@ -1,5 +1,6 @@
 import { getCurrentUser, unauthorized } from "../_lib/auth";
-import { insertNote, listNotesForUser, removeNote } from "../_lib/storage";
+import { generateReadingImage, isGeminiImageEnabled } from "../_lib/gemini-image";
+import { insertNote, listNotesForUser, removeNote, saveNoteImage } from "../_lib/storage";
 
 type NoteInput = { bookTitle?: string; author?: string; readDate?: string; rating?: string | number; memo?: string };
 
@@ -30,7 +31,15 @@ export async function POST(request: Request) {
     }
     if (bookTitle.length > 120 || author.length > 80 || memo.length > 1000) return Response.json({ error: "입력 가능한 글자 수를 초과했습니다." }, { status: 400 });
     const note = await insertNote({ userId: user.id, bookTitle, author, readDate, rating, memo });
-    return Response.json({ note }, { status: 201 });
+    if (!isGeminiImageEnabled()) return Response.json({ note, imageStatus: "disabled" }, { status: 201 });
+    try {
+      const image = await generateReadingImage({ bookTitle, author, memo });
+      const imageUrl = await saveNoteImage(note.id, image.bytes, image.mimeType);
+      return Response.json({ note: { ...note, imageUrl }, imageStatus: "created" }, { status: 201 });
+    } catch (imageError) {
+      console.error("Note image generation failed", imageError);
+      return Response.json({ note, imageStatus: "failed" }, { status: 201 });
+    }
   } catch (error) {
     console.error("Note write failed", error);
     return Response.json({ error: "독서 기록을 저장하지 못했습니다." }, { status: 500 });

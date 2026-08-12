@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { loadStore, mutateStore, nextId, type LocalNote, type LocalUser } from "./local-store";
 
 export type StoredUser = LocalUser;
-export type StoredNote = LocalNote;
+export type StoredNote = LocalNote & { imageUrl?: string };
 export type AdminNote = StoredNote & { username: string; displayName: string };
 
 type UserRow = {
@@ -26,6 +26,7 @@ type NoteRow = {
 };
 
 let cachedSupabase: SupabaseClient | null = null;
+const NOTE_IMAGE_BUCKET = "pagelog-images";
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -71,6 +72,51 @@ function toNote(row: NoteRow): StoredNote {
     memo: row.memo,
     createdAt: row.created_at,
   };
+}
+
+async function attachImageUrls(notes: StoredNote[], supabase: SupabaseClient): Promise<StoredNote[]> {
+  if (!notes.length) return notes;
+  const { data: files, error } = await supabase.storage.from(NOTE_IMAGE_BUCKET).list("notes", { limit: 1000 });
+  if (error) return notes;
+  const fileById = new Map<number, string>();
+  for (const file of files ?? []) {
+    const id = Number(file.name.split(".")[0]);
+    if (Number.isInteger(id)) fileById.set(id, file.name);
+  }
+  return notes.map((note) => {
+    const filename = fileById.get(note.id);
+    if (!filename) return note;
+    const { data } = supabase.storage.from(NOTE_IMAGE_BUCKET).getPublicUrl(`notes/${filename}`);
+    return { ...note, imageUrl: data.publicUrl };
+  });
+}
+
+async function ensureImageBucket(supabase: SupabaseClient) {
+  const { data } = await supabase.storage.getBucket(NOTE_IMAGE_BUCKET);
+  if (data) return;
+  const { error } = await supabase.storage.createBucket(NOTE_IMAGE_BUCKET, {
+    public: true,
+    fileSizeLimit: 6 * 1024 * 1024,
+    allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"],
+  });
+  if (error && !error.message.toLowerCase().includes("already exists")) {
+    throw new Error(`Supabase 이미지 버킷 생성 실패: ${error.message}`);
+  }
+}
+
+export async function saveNoteImage(noteId: number, bytes: Uint8Array, mimeType: string): Promise<string> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("이미지 저장에는 Supabase 설정이 필요합니다.");
+  await ensureImageBucket(supabase);
+  const extension = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/png" ? "png" : "webp";
+  const path = `notes/${noteId}.${extension}`;
+  const { error } = await supabase.storage.from(NOTE_IMAGE_BUCKET).upload(path, bytes, {
+    contentType: mimeType,
+    cacheControl: "31536000",
+    upsert: true,
+  });
+  if (error) throw new Error(`Supabase 이미지 저장 실패: ${error.message}`);
+  return supabase.storage.from(NOTE_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 export function storageMode() {
@@ -145,7 +191,7 @@ export async function listNotesForUser(userId: number): Promise<StoredNote[]> {
   const supabase = getSupabase();
   if (!supabase) return (await loadStore()).notes.filter((note) => note.userId === userId).sort((a, b) => b.readDate.localeCompare(a.readDate) || b.id - a.id);
   const { data, error } = await supabase.from("pagelog_notes").select("id,user_id,book_title,author,read_date,rating,memo,created_at").eq("user_id", userId).order("read_date", { ascending: false }).order("id", { ascending: false });
-  return assertSupabase(error, data as NoteRow[], "독서 기록 조회").map(toNote);
+  return attachImageUrls(assertSupabase(error, data as NoteRow[], "독서 기록 조회").map(toNote), supabase);
 }
 
 export async function insertNote(note: Omit<StoredNote, "id" | "createdAt">): Promise<StoredNote> {
@@ -171,7 +217,11 @@ export async function removeNote(id: number, userId: number) {
     });
   }
   const { data, error } = await supabase.from("pagelog_notes").delete().eq("id", id).eq("user_id", userId).select("id");
-  return assertSupabase(error, data as Array<{ id: number }>, "독서 기록 삭제").length > 0;
+  const deleted = assertSupabase(error, data as Array<{ id: number }>, "독서 기록 삭제").length > 0;
+  if (deleted) {
+    await supabase.storage.from(NOTE_IMAGE_BUCKET).remove([`notes/${id}.webp`, `notes/${id}.png`, `notes/${id}.jpg`]);
+  }
+  return deleted;
 }
 
 export async function listAllNotes(): Promise<AdminNote[]> {
@@ -189,9 +239,10 @@ export async function listAllNotes(): Promise<AdminNote[]> {
   if (!userIds.length) return [];
   const { data: users, error: usersError } = await supabase.from("pagelog_users").select("id,username,display_name,password_hash,role,created_at").in("id", userIds);
   const userMap = new Map(assertSupabase(usersError, users as UserRow[], "관리자 사용자 조회").map((user) => [user.id, user]));
-  return noteRows.map((row) => {
+  const result = noteRows.map((row) => {
     const note = toNote(row);
     const owner = userMap.get(row.user_id);
     return { ...note, username: owner?.username ?? "unknown", displayName: owner?.display_name ?? "알 수 없음" };
   });
+  return attachImageUrls(result, supabase) as Promise<AdminNote[]>;
 }

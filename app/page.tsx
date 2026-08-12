@@ -14,6 +14,7 @@ type Note = {
   rating: number;
   memo: string;
   createdAt: string;
+  imageUrl?: string;
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -88,7 +89,9 @@ export default function Home() {
       form.reset();
       const dateInput = form.elements.namedItem("readDate") as HTMLInputElement;
       dateInput.value = today();
-      setMessage("독서 기록을 저장했습니다.");
+      if (data.imageStatus === "created") setMessage("독서 기록과 AI 그림을 저장했습니다.");
+      else if (data.imageStatus === "disabled") setMessage("독서 기록을 저장했습니다. Gemini API 키를 등록하면 그림도 생성됩니다.");
+      else setMessage("독서 기록은 저장했지만 그림 생성에 실패했습니다. 기록은 안전하게 보관되었습니다.");
     }
     setSubmitting(false);
   }
@@ -174,7 +177,7 @@ export default function Home() {
               <label>나의 평점<select name="rating" defaultValue="5"><option value="5">★★★★★ 아주 좋아요</option><option value="4">★★★★☆ 좋아요</option><option value="3">★★★☆☆ 보통이에요</option><option value="2">★★☆☆☆ 아쉬워요</option><option value="1">★☆☆☆☆ 별로예요</option></select></label>
             </div>
             <label>기억하고 싶은 내용<textarea name="memo" rows={4} maxLength={1000} placeholder="인상 깊었던 문장, 새롭게 알게 된 점, 나의 생각을 자유롭게 적어보세요." required /></label>
-            <div className="form-footer"><p className={message.includes("못") ? "error" : "success"}>{message}</p><button className="primary compact" disabled={submitting}>{submitting ? "저장 중..." : "기록 저장하기"}</button></div>
+            <div className="form-footer"><p className={message.includes("실패") || message.includes("못") ? "error" : "success"}>{message}</p><button className="primary compact" disabled={submitting}>{submitting ? "기록과 그림 만드는 중..." : "기록 저장하기"}</button></div>
           </form>
         </section>
       )}
@@ -192,6 +195,7 @@ export default function Home() {
                   {user.role === "admin" && <div className="author-chip"><span>{note.displayName?.slice(0, 1)}</span>{note.displayName} <small>@{note.username}</small></div>}
                   <div className="note-title"><div><h3>{note.bookTitle}</h3><p>{note.author}</p></div><span className="stars">{"★".repeat(note.rating)}<i>{"★".repeat(5 - note.rating)}</i></span></div>
                   <p className="memo">{note.memo}</p>
+                  {note.imageUrl && <figure className="note-image"><img src={note.imageUrl} alt={`${note.bookTitle} 독서 기록을 바탕으로 Gemini가 생성한 그림`} loading="lazy" /><figcaption>Gemini로 그린 독서 기록</figcaption></figure>}
                   <div className="note-meta"><time>{note.readDate.replaceAll("-", ". ")}</time>{user.role === "user" && <button onClick={() => removeNote(note.id)}>삭제</button>}</div>
                 </div>
               </article>
