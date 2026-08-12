@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { loadStore, mutateStore, nextId } from "./local-store";
 
 export type AuthUser = {
   id: number;
@@ -47,21 +47,28 @@ export async function verifyPassword(password: string, encoded: string) {
 }
 
 export async function seedDemoUsers() {
-  const [readerHash, adminHash] = await Promise.all([hashPassword("reader1234"), hashPassword("admin1234")]);
-  await env.DB.batch([
-    env.DB.prepare("INSERT OR IGNORE INTO users (username, display_name, password_hash, role) VALUES (?, ?, ?, ?)").bind("reader", "책벌레 김독자", readerHash, "user"),
-    env.DB.prepare("INSERT OR IGNORE INTO users (username, display_name, password_hash, role) VALUES (?, ?, ?, ?)").bind("admin", "운영 관리자", adminHash, "admin"),
-  ]);
+  await mutateStore(async (store) => {
+    if (store.users.some((user) => user.username === "reader")) return;
+    const [readerHash, adminHash] = await Promise.all([hashPassword("reader1234"), hashPassword("admin1234")]);
+    const createdAt = new Date().toISOString();
+    store.users.push(
+      { id: nextId(store.users), username: "reader", displayName: "책벌레 김독자", passwordHash: readerHash, role: "user", createdAt },
+      { id: nextId([...store.users, { id: 1 }]), username: "admin", displayName: "운영 관리자", passwordHash: adminHash, role: "admin", createdAt },
+    );
+  });
 }
 
 export async function createSession(userId: number) {
   const token = bytesToBase64(crypto.getRandomValues(new Uint8Array(32)));
   const tokenHash = await sha256(token);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
-  await env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)").bind(tokenHash, userId, expiresAt.toISOString()).run();
+  await mutateStore((store) => {
+    store.sessions = store.sessions.filter((session) => session.expiresAt > new Date().toISOString());
+    store.sessions.push({ tokenHash, userId, expiresAt: expiresAt.toISOString(), createdAt: new Date().toISOString() });
+  });
   return {
     token,
-    cookie: `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,
+    cookie: `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`,
   };
 }
 
@@ -74,17 +81,18 @@ export async function getCurrentUser(request: Request): Promise<AuthUser | null>
   const token = readToken(request);
   if (!token) return null;
   const tokenHash = await sha256(token);
-  const row = await env.DB.prepare(`
-    SELECT u.id, u.username, u.display_name AS displayName, u.role
-    FROM sessions s JOIN users u ON u.id = s.user_id
-    WHERE s.token_hash = ? AND s.expires_at > CURRENT_TIMESTAMP
-  `).bind(tokenHash).first<AuthUser>();
-  return row ?? null;
+  const store = await loadStore();
+  const session = store.sessions.find((item) => item.tokenHash === tokenHash && item.expiresAt > new Date().toISOString());
+  const user = session ? store.users.find((item) => item.id === session.userId) : null;
+  return user ? { id: user.id, username: user.username, displayName: user.displayName, role: user.role } : null;
 }
 
 export async function deleteSession(request: Request) {
   const token = readToken(request);
-  if (token) await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256(token)).run();
+  if (token) {
+    const tokenHash = await sha256(token);
+    await mutateStore((store) => { store.sessions = store.sessions.filter((session) => session.tokenHash !== tokenHash); });
+  }
   return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 }
 

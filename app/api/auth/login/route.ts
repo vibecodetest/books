@@ -1,7 +1,5 @@
-import { env } from "cloudflare:workers";
 import { createSession, seedDemoUsers, verifyPassword } from "../../_lib/auth";
-
-type UserRow = { id: number; username: string; displayName: string; passwordHash: string; role: "user" | "admin" };
+import { loadStore } from "../../_lib/local-store";
 
 export async function POST(request: Request) {
   const payload = await request.json() as { username?: string; password?: string };
@@ -10,12 +8,12 @@ export async function POST(request: Request) {
   if (!username || !password) return Response.json({ error: "아이디와 비밀번호를 입력해 주세요." }, { status: 400 });
 
   await seedDemoUsers();
-  const user = await env.DB.prepare(`SELECT id, username, display_name AS displayName, password_hash AS passwordHash, role FROM users WHERE username = ?`).bind(username).first<UserRow>();
+  const user = (await loadStore()).users.find((item) => item.username === username);
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return Response.json({ error: "아이디 또는 비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
 
   const session = await createSession(user.id);
-  const { passwordHash: _, ...safeUser } = user;
+  const safeUser = { id: user.id, username: user.username, displayName: user.displayName, role: user.role };
   return Response.json({ user: safeUser }, { headers: { "Set-Cookie": session.cookie } });
 }
