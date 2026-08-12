@@ -24,9 +24,9 @@ export async function generateReadingImage(input: { bookTitle: string; author: s
   const interaction = await ai.interactions.create({
     model: process.env.GEMINI_IMAGE_MODEL?.trim() || "gemini-3.1-flash-image",
     input: prompt,
-    response_format: { type: "image", mime_type: "image/webp", aspect_ratio: "4:3", image_size: "1K" },
+    response_format: { type: "image", mime_type: "image/jpeg", aspect_ratio: "4:3", image_size: "1K" },
   });
   const image = interaction.output_image;
   if (!image?.data) throw new Error("Gemini가 이미지 데이터를 반환하지 않았습니다.");
-  return { bytes: Uint8Array.from(Buffer.from(image.data, "base64")), mimeType: image.mime_type || "image/webp" };
+  return { bytes: Uint8Array.from(Buffer.from(image.data, "base64")), mimeType: image.mime_type || "image/jpeg" };
 }
