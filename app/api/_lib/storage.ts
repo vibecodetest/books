@@ -29,10 +29,16 @@ let cachedSupabase: SupabaseClient | null = null;
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url && !serviceRoleKey) return null;
-  if (!url || !serviceRoleKey) throw new Error("SUPABASE_URL과 SUPABASE_SERVICE_ROLE_KEY를 모두 설정해야 합니다.");
-  cachedSupabase ??= createClient(url, serviceRoleKey, {
+  const serverKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url && !serverKey) return null;
+  if (!url || !serverKey) throw new Error("SUPABASE_URL과 SUPABASE_SECRET_KEY를 모두 설정해야 합니다.");
+  if (serverKey.startsWith("sb_publishable_")) {
+    throw new Error("SUPABASE_SECRET_KEY에 공개용 sb_publishable 키를 사용할 수 없습니다. Supabase의 sb_secret 키를 설정해 주세요.");
+  }
+  if (!serverKey.startsWith("sb_secret_") && !serverKey.startsWith("eyJ")) {
+    throw new Error("Supabase 서버 키 형식이 올바르지 않습니다. sb_secret 키 또는 기존 service_role JWT가 필요합니다.");
+  }
+  cachedSupabase ??= createClient(url, serverKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   return cachedSupabase;
