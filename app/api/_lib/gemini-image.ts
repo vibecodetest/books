@@ -22,7 +22,7 @@ export async function generateReadingImage(input: { bookTitle: string; author: s
   ].join("\n");
 
   const interaction = await ai.interactions.create({
-    model: process.env.GEMINI_IMAGE_MODEL?.trim() || "gemini-3.1-flash-image",
+    model: process.env.GEMINI_IMAGE_MODEL?.trim() || "gemini-3.1-flash-lite-image",
     input: prompt,
     response_format: { type: "image", mime_type: "image/jpeg", aspect_ratio: "4:3", image_size: "1K" },
   });
