@@ -1,11 +1,6 @@
-import { loadStore, mutateStore, nextId } from "./local-store";
+import { ensureUsers, findUserBySession, findUserByUsername, removeSession, saveSession } from "./storage";
 
-export type AuthUser = {
-  id: number;
-  username: string;
-  displayName: string;
-  role: "user" | "admin";
-};
+export type AuthUser = { id: number; username: string; displayName: string; role: "user" | "admin" };
 
 const COOKIE_NAME = "pagelog_session";
 const ITERATIONS = 120_000;
@@ -47,28 +42,21 @@ export async function verifyPassword(password: string, encoded: string) {
 }
 
 export async function seedDemoUsers() {
-  await mutateStore(async (store) => {
-    if (store.users.some((user) => user.username === "reader")) return;
-    const [readerHash, adminHash] = await Promise.all([hashPassword("reader1234"), hashPassword("admin1234")]);
-    const createdAt = new Date().toISOString();
-    store.users.push(
-      { id: nextId(store.users), username: "reader", displayName: "책벌레 김독자", passwordHash: readerHash, role: "user", createdAt },
-      { id: nextId([...store.users, { id: 1 }]), username: "admin", displayName: "운영 관리자", passwordHash: adminHash, role: "admin", createdAt },
-    );
-  });
+  const [reader, admin] = await Promise.all([findUserByUsername("reader"), findUserByUsername("admin")]);
+  const missing = [];
+  if (!reader) missing.push({ username: "reader", displayName: "책벌레 김독자", passwordHash: await hashPassword("reader1234"), role: "user" as const });
+  if (!admin) missing.push({ username: "admin", displayName: "운영 관리자", passwordHash: await hashPassword("admin1234"), role: "admin" as const });
+  if (missing.length) await ensureUsers(missing);
 }
 
 export async function createSession(userId: number) {
   const token = bytesToBase64(crypto.getRandomValues(new Uint8Array(32)));
   const tokenHash = await sha256(token);
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
-  await mutateStore((store) => {
-    store.sessions = store.sessions.filter((session) => session.expiresAt > new Date().toISOString());
-    store.sessions.push({ tokenHash, userId, expiresAt: expiresAt.toISOString(), createdAt: new Date().toISOString() });
-  });
+  const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000).toISOString();
+  await saveSession(tokenHash, userId, expiresAt);
   return {
     token,
-    cookie: `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`,
+    cookie: `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}${process.env.VERCEL ? "; Secure" : ""}`,
   };
 }
 
@@ -80,19 +68,13 @@ function readToken(request: Request) {
 export async function getCurrentUser(request: Request): Promise<AuthUser | null> {
   const token = readToken(request);
   if (!token) return null;
-  const tokenHash = await sha256(token);
-  const store = await loadStore();
-  const session = store.sessions.find((item) => item.tokenHash === tokenHash && item.expiresAt > new Date().toISOString());
-  const user = session ? store.users.find((item) => item.id === session.userId) : null;
+  const user = await findUserBySession(await sha256(token));
   return user ? { id: user.id, username: user.username, displayName: user.displayName, role: user.role } : null;
 }
 
 export async function deleteSession(request: Request) {
   const token = readToken(request);
-  if (token) {
-    const tokenHash = await sha256(token);
-    await mutateStore((store) => { store.sessions = store.sessions.filter((session) => session.tokenHash !== tokenHash); });
-  }
+  if (token) await removeSession(await sha256(token));
   return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 }
 
